@@ -1,199 +1,160 @@
-loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-
+-- Full Da Hood HVH Script with GUI (Juju Style)
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
 
-local Settings = {
-    Ragebot = false,
-    CameraLock = false,
-    TriggerBot = false,
-    ESP = false,
-    Tracers = false,
-    AntiLock = false,
-    AimPart = "Head",
-    Range = 1000,
-}
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "JujuHVHGUI"
 
-local CurrentTarget = nil
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 400, 0, 300)
+Frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
 
-local function getClosestPlayer()
-    local closest = nil
-    local shortest = Settings.Range
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(Settings.AimPart) then
-            local part = player.Character[Settings.AimPart]
-            local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
-            if onScreen then
-                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
-                if dist < shortest then
-                    shortest = dist
-                    closest = player
-                end
-            end
-        end
-    end
-    return closest
-end
+local UIGrid = Instance.new("UIGridLayout", Frame)
+UIGrid.CellSize = UDim2.new(0, 130, 0, 40)
+UIGrid.CellPadding = UDim2.new(0, 10, 0, 10)
 
-local function rageBot()
-    if Settings.Ragebot and CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild(Settings.AimPart) then
-        local part = CurrentTarget.Character[Settings.AimPart]
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, part.Position)
-    end
-end
-
-local function triggerBot()
-    if Settings.TriggerBot and CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild(Settings.AimPart) then
-        local Mouse = LocalPlayer:GetMouse()
-        local target = Mouse.Target
-        if target and target:IsDescendantOf(CurrentTarget.Character) then
-            mouse1click()
-        end
-    end
-end
-
-local function drawESP(player)
-    local Box = Drawing.new("Text")
-    Box.Size = 13
-    Box.Center = true
-    Box.Outline = true
-    Box.Font = 2
-    Box.Color = Color3.new(1, 0, 0)
-    Box.Visible = false
-
-    local Tracer = Drawing.new("Line")
-    Tracer.Thickness = 1.5
-    Tracer.Color = Color3.fromRGB(255, 0, 0)
-    Tracer.Visible = false
-
-    RunService.RenderStepped:Connect(function()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
-            Box.Visible = onScreen and Settings.ESP
-            Tracer.Visible = onScreen and Settings.Tracers
-
-            if onScreen then
-                Box.Position = Vector2.new(pos.X, pos.Y - 30)
-                Box.Text = player.Name
-                Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                Tracer.To = Vector2.new(pos.X, pos.Y)
-            end
-        else
-            Box.Visible = false
-            Tracer.Visible = false
-        end
+function createToggle(name, callback)
+    local toggle = Instance.new("TextButton", Frame)
+    toggle.Text = name
+    toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggle.BorderSizePixel = 0
+    local state = false
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        toggle.BackgroundColor3 = state and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(45, 45, 45)
+        callback(state)
     end)
 end
 
-local function antiLock()
-    if Settings.AntiLock and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local root = LocalPlayer.Character.HumanoidRootPart
-        root.Velocity = Vector3.new(math.random(-15,15), 0, math.random(-15,15))
-    end
+function createButton(name, callback)
+    local button = Instance.new("TextButton", Frame)
+    button.Text = name
+    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.BorderSizePixel = 0
+    button.MouseButton1Click:Connect(callback)
 end
 
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        drawESP(player)
+-- HVH Features
+createToggle("Anti Lock", function(state)
+    if state then
+        LocalPlayer.Character.HumanoidRootPart.Size = Vector3.new(3, 3, 3)
+    else
+        LocalPlayer.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
     end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    drawESP(player)
 end)
 
+createToggle("Anti Aim", function(state)
+    RunService.RenderStepped:Connect(function()
+        if state and LocalPlayer.Character then
+            local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+            end
+        end
+    end)
+end)
+
+createToggle("Spinbot", function(state)
+    RunService.RenderStepped:Connect(function()
+        if state and LocalPlayer.Character then
+            local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.CFrame *= CFrame.Angles(0, math.rad(30), 0)
+            end
+        end
+    end)
+end)
+
+createToggle("Resolver", function(state)
+    -- Resolver mockup: correct enemy CFrame for fake angles (simple version)
+    RunService.Stepped:Connect(function()
+        if state then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                    v.Character.HumanoidRootPart.Rotation = Vector3.zero
+                end
+            end
+        end
+    end)
+end)
+
+-- Movement Enhancements
+createToggle("Speed", function(state)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = state and 100 or 16
+    end
+end)
+
+createToggle("Noclip", function(state)
+    RunService.Stepped:Connect(function()
+        if state and LocalPlayer.Character then
+            for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = false
+                end
+            end
+        end
+    end)
+end)
+
+-- Server Tools
+createButton("Rejoin Server", function()
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end)
+
+createButton("Hop Servers", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/2gtEPbQJ"))()
+end)
+
+-- Utility
+createButton("Force Reset", function()
+    if LocalPlayer.Character then
+        LocalPlayer.Character:BreakJoints()
+    end
+end)
+
+createButton("Animation Breaker", function()
+    for _, anim in pairs(LocalPlayer.Character.Humanoid:GetPlayingAnimationTracks()) do
+        anim:Stop()
+    end
+end)
+
+createButton("Detect Staff", function()
+    for _, v in pairs(Players:GetPlayers()) do
+        if v:GetRankInGroup(1) > 200 then -- Replace with your group ID
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Staff Detected",
+                Text = v.Name
+            })
+        end
+    end
+end)
+
+-- Legitbot Placeholder
+createToggle("Silent Aim", function(state)
+    getgenv().silentAim = state
+end)
+
+createToggle("Triggerbot", function(state)
+    getgenv().triggerbot = state
+end)
+
+-- Legitbot Logic
 RunService.RenderStepped:Connect(function()
-    if Settings.CameraLock then
-        CurrentTarget = getClosestPlayer()
+    if getgenv().triggerbot then
+        local target = Players:GetPlayers()[2] -- placeholder, better targeting logic needed
+        if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+            mouse1press()
+            wait(0.1)
+            mouse1release()
+        end
     end
-    rageBot()
-    triggerBot()
-    antiLock()
 end)
-
--- UI Setup
-local Window = Rayfield:CreateWindow({
-    Name = "soul.find",
-    LoadingTitle = "soul.find Da Hood HvH",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "soul.find", 
-        FileName = "soul.find_settings"
-    },
-    Discord = {
-        Enabled = false
-    },
-    KeySystem = false
-})
-
-local Tab = Window:CreateTab("Main", 4483362458)
-
-Tab:CreateToggle({
-    Name = "RageBot",
-    CurrentValue = Settings.Ragebot,
-    Callback = function(v)
-        Settings.Ragebot = v
-    end,
-})
-
-Tab:CreateToggle({
-    Name = "Camera Lock",
-    CurrentValue = Settings.CameraLock,
-    Callback = function(v)
-        Settings.CameraLock = v
-    end,
-})
-
-Tab:CreateToggle({
-    Name = "TriggerBot",
-    CurrentValue = Settings.TriggerBot,
-    Callback = function(v)
-        Settings.TriggerBot = v
-    end,
-})
-
-Tab:CreateToggle({
-    Name = "ESP",
-    CurrentValue = Settings.ESP,
-    Callback = function(v)
-        Settings.ESP = v
-    end,
-})
-
-Tab:CreateToggle({
-    Name = "Tracers",
-    CurrentValue = Settings.Tracers,
-    Callback = function(v)
-        Settings.Tracers = v
-    end,
-})
-
-Tab:CreateToggle({
-    Name = "Anti-Lock",
-    CurrentValue = Settings.AntiLock,
-    Callback = function(v)
-        Settings.AntiLock = v
-    end,
-})
-
-Tab:CreateDropdown({
-    Name = "Aim Part",
-    Options = {"Head", "UpperTorso", "HumanoidRootPart"},
-    CurrentOption = Settings.AimPart,
-    Callback = function(v)
-        Settings.AimPart = v
-    end,
-})
-
-Tab:CreateSlider({
-    Name = "Aim Range",
-    Range = {50, 1000},
-    Increment = 10,
-    Suffix = "px",
-    CurrentValue = Settings.Range,
-    Callback = function(v)
-        Settings.Range = v
-    end,
-})
