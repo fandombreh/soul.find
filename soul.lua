@@ -5,7 +5,7 @@ local TeleportService = game:GetService("TeleportService")
 local Workspace = game:GetService("Workspace")
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source.lua"))()
-local Window = Library:CreateWindow({Name = "juju live", HidePremium = true, SaveConfig = false, ConfigFolder = "juju_live"})
+local Window = Library:CreateWindow({Name = "snoopy.fun", HidePremium = true, SaveConfig = false, ConfigFolder = "juju_live"})
 
 -- State holders
 local noclip = false
